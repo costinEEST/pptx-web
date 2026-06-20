@@ -1,0 +1,193 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="description" content="Open and present PowerPoint .pptx files directly in your browser." />
+    <meta name="theme-color" content="#10131a" />
+    <title>PPTX (PowerPoint) viewer</title>
+  </head>
+  <body>
+    <div id="app" class="app is-empty">
+      <header class="topbar">
+        <button
+          id="sidebar-toggle"
+          class="icon-button"
+          type="button"
+          aria-label="Toggle slide thumbnails"
+          aria-controls="sidebar"
+          aria-expanded="true"
+          disabled>
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M4 5h16v14H4zM9 5v14M4 10h5M4 14h5" />
+          </svg>
+        </button>
+
+        <a class="brand" href="./" aria-label="pptx-web home">
+          <span class="brand-mark" aria-hidden="true">
+            <i></i>
+            <i></i>
+            <i></i>
+          </span>
+          <span>pptx-web</span>
+        </a>
+        <p id="document-title" class="document-title" title="No presentation open">No presentation open</p>
+
+        <div class="topbar-actions">
+          <button id="url-button" class="button button-secondary" type="button">Open URL</button>
+          <label class="button button-primary" for="file-input">Open file</label>
+          <input
+            id="file-input"
+            class="visually-hidden"
+            type="file"
+            accept=".pptx,application/vnd.openxmlformats-officedocument.presentationml.presentation" />
+        </div>
+      </header>
+
+      <main class="workspace">
+        <aside id="sidebar" class="sidebar" aria-label="Slides">
+          <div class="search-box">
+            <label class="visually-hidden" for="search-input">Search presentation</label>
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <circle cx="11" cy="11" r="6.5" />
+              <path d="m16 16 4 4" />
+            </svg>
+            <input id="search-input" type="search" placeholder="Search slides" autocomplete="off" disabled />
+            <div class="search-actions">
+              <output id="search-count" aria-live="polite"></output>
+              <button id="search-prev" type="button" aria-label="Previous search result" disabled>Up</button>
+              <button id="search-next" type="button" aria-label="Next search result" disabled>Down</button>
+            </div>
+          </div>
+          <div id="thumbnail-list" class="thumbnail-list" role="listbox" aria-label="Slide thumbnails"></div>
+        </aside>
+
+        <section id="stage" class="stage" aria-label="Presentation viewer">
+          <div id="welcome" class="welcome">
+            <div class="welcome-copy">
+              <p class="eyebrow">Browser-native PowerPoint viewer</p>
+              <h1>Your slides, without the detour.</h1>
+              <p class="welcome-lede">
+                Open a PowerPoint deck from your device or a direct link. Rendering happens here in your browser.
+              </p>
+              <div class="welcome-actions">
+                <label class="button button-primary button-large" for="file-input">Choose a .pptx</label>
+                <button id="welcome-url-button" class="button button-secondary button-large" type="button">
+                  Paste a link
+                </button>
+              </div>
+              <p class="privacy-note">
+                Local files are not uploaded. You can also drop a presentation anywhere on this page.
+              </p>
+            </div>
+
+            <div class="deck-illustration" aria-hidden="true">
+              <div class="mock-slide mock-slide-back"></div>
+              <div class="mock-slide mock-slide-middle"></div>
+              <div class="mock-slide mock-slide-front">
+                <span class="mock-kicker"></span>
+                <span class="mock-title"></span>
+                <span class="mock-title mock-title-short"></span>
+                <div class="mock-chart">
+                  <i></i>
+                  <i></i>
+                  <i></i>
+                  <i></i>
+                  <i></i>
+                </div>
+                <span class="mock-caption"></span>
+              </div>
+            </div>
+          </div>
+
+          <div id="viewer-container" class="viewer-container" aria-live="off"></div>
+
+          <div id="loading" class="loading-layer" hidden>
+            <div class="loading-card" role="status">
+              <span class="loading-spinner" aria-hidden="true"></span>
+              <div class="loading-copy">
+                <strong id="loading-title">Opening presentation</strong>
+                <span id="loading-detail">Reading the file...</span>
+              </div>
+              <progress id="loading-progress" max="1"></progress>
+              <button id="cancel-button" class="text-button" type="button">Cancel</button>
+            </div>
+          </div>
+
+          <div id="drop-layer" class="drop-layer" hidden>
+            <div>
+              <strong>Drop the presentation to open it</strong>
+              <span>.pptx files up to 200 MB</span>
+            </div>
+          </div>
+
+          <div id="error-toast" class="error-toast" role="alert" hidden>
+            <div>
+              <strong>Could not open presentation</strong>
+              <p id="error-message"></p>
+            </div>
+            <button id="dismiss-error" class="icon-button" type="button" aria-label="Dismiss error">Close</button>
+          </div>
+        </section>
+      </main>
+
+      <footer class="bottombar" aria-label="Presentation controls">
+        <div class="footer-status">
+          <span class="status-dot" aria-hidden="true"></span>
+          <span id="status" aria-live="polite">Ready</span>
+        </div>
+
+        <div class="slide-navigation" role="group" aria-label="Slide navigation">
+          <button id="previous-button" class="nav-button" type="button" disabled>Prev</button>
+          <label class="slide-counter" for="slide-number">
+            <span class="visually-hidden">Current slide</span>
+            <input id="slide-number" type="number" min="1" value="1" inputmode="numeric" disabled />
+            <span aria-hidden="true">/</span>
+            <span id="slide-count">0</span>
+          </label>
+          <button id="next-button" class="nav-button" type="button" disabled>Next</button>
+        </div>
+
+        <div class="view-controls" role="group" aria-label="View controls">
+          <button id="zoom-out" class="icon-button" type="button" aria-label="Zoom out" disabled>
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 12h12" /></svg>
+          </button>
+          <output id="zoom-value">100%</output>
+          <button id="zoom-in" class="icon-button" type="button" aria-label="Zoom in" disabled>
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 12h12M12 6v12" /></svg>
+          </button>
+          <button id="fit-button" class="text-button" type="button" disabled>Fit</button>
+          <button id="fullscreen-button" class="icon-button" type="button" aria-label="Enter fullscreen" disabled>
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M8 4H4v4M16 4h4v4M20 16v4h-4M4 16v4h4" />
+            </svg>
+          </button>
+        </div>
+      </footer>
+    </div>
+
+    <dialog id="url-dialog" class="url-dialog">
+      <form id="url-form">
+        <div class="dialog-heading">
+          <div>
+            <p class="eyebrow">Open from the web</p>
+            <h2>Paste a direct .pptx link</h2>
+          </div>
+          <button id="close-url-dialog" class="icon-button" type="button" aria-label="Close URL dialog">Close</button>
+        </div>
+        <label for="url-input">Presentation URL</label>
+        <input id="url-input" type="url" inputmode="url" placeholder="https://example.com/presentation.pptx" required />
+        <p>
+          That server must allow cross-origin browser requests (CORS). Shared page links are usually not direct file
+          links.
+        </p>
+        <div class="dialog-actions">
+          <button id="url-cancel" class="button button-secondary" type="button">Cancel</button>
+          <button class="button button-primary" type="submit">Open presentation</button>
+        </div>
+      </form>
+    </dialog>
+
+    <script type="module" src="/src/main.js"></script>
+  </body>
+</html>

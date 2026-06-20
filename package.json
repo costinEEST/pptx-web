@@ -1,0 +1,20 @@
+{
+  "name": "pptx-web",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "A fast, browser-only PowerPoint viewer.",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "test": "node --test",
+    "test:remote": "node --test integration/remote-source.mjs"
+  },
+  "dependencies": {
+    "@aiden0z/pptx-renderer": "^1.2.0"
+  },
+  "devDependencies": {
+    "vite": "^8.0.16"
+  }
+}
