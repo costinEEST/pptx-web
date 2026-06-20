@@ -216,8 +216,8 @@
   .brand-mark i:nth-child(3) { block-size: 55%; }
 
   .document-title {
+    flex: 1 1 auto;
     min-inline-size: 0;
-    max-inline-size: 42ch;
     overflow: hidden;
     color: var(--text-soft);
     font-size: 0.78rem;
@@ -233,6 +233,7 @@
 
   .topbar-actions {
     display: flex;
+    flex: 0 0 auto;
     gap: 0.5rem;
     margin-inline-start: auto;
   }
