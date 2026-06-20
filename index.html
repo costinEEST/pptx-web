@@ -4,7 +4,8 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="description" content="Open and present PowerPoint .pptx files directly in your browser." />
-    <meta name="theme-color" content="#10131a" />
+    <meta id="theme-color" name="theme-color" content="#f7f9fc" />
+    <link rel="icon" href="data:," />
     <title>PPTX (PowerPoint) viewer</title>
   </head>
   <body>
@@ -37,12 +38,12 @@
         <div class="topbar-actions">
           <button id="url-button" class="button button-secondary" type="button">Open URL</button>
           <label class="button button-primary" for="file-input">Open file</label>
-          <input
-            id="file-input"
-            class="visually-hidden"
-            type="file"
-            accept=".pptx,application/vnd.openxmlformats-officedocument.presentationml.presentation" />
         </div>
+        <input
+          id="file-input"
+          class="visually-hidden"
+          type="file"
+          accept=".pptx,application/vnd.openxmlformats-officedocument.presentationml.presentation" />
       </header>
 
       <main class="workspace">
@@ -66,39 +67,21 @@
         <section id="stage" class="stage" aria-label="Presentation viewer">
           <div id="welcome" class="welcome">
             <div class="welcome-copy">
-              <p class="eyebrow">Browser-native PowerPoint viewer</p>
-              <h1>Your slides, without the detour.</h1>
+              <p class="eyebrow">Private, browser-native viewer</p>
+              <h1>Open PowerPoint files in your browser.</h1>
               <p class="welcome-lede">
-                Open a PowerPoint deck from your device or a direct link. Rendering happens here in your browser.
+                View a .pptx from your device or a direct link. No software to install, and local files stay on your
+                device.
               </p>
               <div class="welcome-actions">
-                <label class="button button-primary button-large" for="file-input">Choose a .pptx</label>
+                <label class="button button-primary button-large" for="file-input">Open a file</label>
                 <button id="welcome-url-button" class="button button-secondary button-large" type="button">
-                  Paste a link
+                  Open from URL
                 </button>
               </div>
-              <p class="privacy-note">
-                Local files are not uploaded. You can also drop a presentation anywhere on this page.
-              </p>
+              <p class="privacy-note">You can also drag and drop a .pptx anywhere on this page.</p>
             </div>
 
-            <div class="deck-illustration" aria-hidden="true">
-              <div class="mock-slide mock-slide-back"></div>
-              <div class="mock-slide mock-slide-middle"></div>
-              <div class="mock-slide mock-slide-front">
-                <span class="mock-kicker"></span>
-                <span class="mock-title"></span>
-                <span class="mock-title mock-title-short"></span>
-                <div class="mock-chart">
-                  <i></i>
-                  <i></i>
-                  <i></i>
-                  <i></i>
-                  <i></i>
-                </div>
-                <span class="mock-caption"></span>
-              </div>
-            </div>
           </div>
 
           <div id="viewer-container" class="viewer-container" aria-live="off"></div>

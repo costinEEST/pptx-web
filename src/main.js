@@ -12,6 +12,7 @@ const MIRROR_BASE_URL = new URL(import.meta.env.BASE_URL, window.location.origin
 
 const elements = {
   app: byId('app'),
+  themeColor: byId('theme-color'),
   sidebar: byId('sidebar'),
   sidebarToggle: byId('sidebar-toggle'),
   sidebarToggleTooltip: byId('sidebar-toggle-tooltip'),
@@ -173,6 +174,7 @@ async function renderPresentation(source, controller) {
   elements.viewerContainer.replaceChildren();
   elements.viewerContainer.setAttribute('aria-busy', 'true');
   elements.app.classList.remove('is-empty');
+  elements.themeColor.setAttribute('content', '#10131a');
   elements.loadingTitle.textContent = 'Rendering presentation';
   elements.loadingDetail.textContent = 'Building the document view...';
 
