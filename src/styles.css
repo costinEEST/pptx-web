@@ -303,6 +303,38 @@
     font-size: 0;
   }
 
+  #sidebar-toggle {
+    position: relative;
+  }
+
+  .tooltip {
+    position: absolute;
+    z-index: 20;
+    inset-block-start: calc(100% + 0.45rem);
+    inset-inline-start: 0;
+    inline-size: max-content;
+    max-inline-size: min(15rem, calc(100vw - 2rem));
+    padding: 0.4rem 0.55rem;
+    visibility: hidden;
+    border: 1px solid var(--line);
+    border-radius: 0.4rem;
+    opacity: 0;
+    background: var(--ink-700);
+    box-shadow: 0 0.4rem 1rem rgb(0 0 0 / 32%);
+    color: var(--text);
+    font-size: 0.68rem;
+    font-weight: 650;
+    line-height: 1.25;
+    pointer-events: none;
+    text-align: start;
+    white-space: nowrap;
+  }
+
+  #sidebar-toggle:not(:disabled):is(:hover, :focus-visible) .tooltip {
+    visibility: visible;
+    opacity: 1;
+  }
+
   .icon-button:not(:has(svg))::after {
     content: attr(aria-label);
     font-size: 0.68rem;

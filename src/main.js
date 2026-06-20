@@ -14,6 +14,7 @@ const elements = {
   app: byId('app'),
   sidebar: byId('sidebar'),
   sidebarToggle: byId('sidebar-toggle'),
+  sidebarToggleTooltip: byId('sidebar-toggle-tooltip'),
   documentTitle: byId('document-title'),
   fileInput: byId('file-input'),
   urlButton: byId('url-button'),
@@ -472,8 +473,12 @@ function setViewerEnabled(enabled) {
 }
 
 function toggleSidebar() {
-  const isOpen = elements.app.classList.toggle('sidebar-closed');
-  elements.sidebarToggle.setAttribute('aria-expanded', String(!isOpen));
+  const isClosed = elements.app.classList.toggle('sidebar-closed');
+  const isExpanded = !isClosed;
+  const label = isExpanded ? 'Hide slide thumbnails' : 'Show slide thumbnails';
+  elements.sidebarToggle.setAttribute('aria-expanded', String(isExpanded));
+  elements.sidebarToggle.setAttribute('aria-label', label);
+  elements.sidebarToggleTooltip.textContent = label;
 }
 
 async function toggleFullscreen() {
