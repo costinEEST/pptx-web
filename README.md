@@ -4,18 +4,32 @@ A fast, browser-only PowerPoint `.pptx` viewer built with HTML, CSS, vanilla
 JavaScript, Vite, and
 [`@aiden0z/pptx-renderer`](https://github.com/aiden0z/pptx-renderer).
 
-The GitHub Pages deployment target is:
-
-**https://costineest.github.io/pptx-web/**
+The GitHub Pages deployment target is
+[costineest.github.io/pptx-web](https://costineest.github.io/pptx-web/).
 
 Files selected from the device stay in the browser. There is no application
 backend and no upload step.
+
+## Table of contents
+
+- [Features](#features)
+- [Architecture](#architecture)
+- [Why no Web Worker or WASM?](#why-no-web-worker-or-wasm)
+- [Performance](#performance)
+- [Local development](#local-development)
+- [Tests](#tests)
+- [URL opening](#url-opening)
+- [GitHub Pages deployment](#github-pages-deployment)
+- [Project structure](#project-structure)
+- [Known limitations](#known-limitations)
+- [License](#license)
 
 ## Features
 
 - Open a local `.pptx` with the file picker.
 - Drop a presentation anywhere in the application.
 - Open an HTTP(S) direct file URL when its server permits browser CORS access.
+- Scroll slides as a continuous, PDF-like vertical document.
 - Navigate with thumbnails, previous/next controls, a slide number, the
   keyboard, or a touch swipe.
 - Search presentation text and highlight matching slide elements.
@@ -36,7 +50,8 @@ The application has two main modules:
 1. [`src/source.js`](./src/source.js) normalizes local and remote presentations
    into the same bounded `ArrayBuffer` contract. It validates the ZIP signature,
    streams URL responses with progress, enforces a 200 MB compressed-file
-   limit, and supports cancellation.
+   limit, supports cancellation, and resolves the canonical test deck to its
+   same-origin static mirror.
 2. [`src/main.js`](./src/main.js) owns the viewer lifecycle and UI. It loads the
    renderer dynamically, renders slides as a windowed vertical document,
    mounts thumbnails as they approach the sidebar viewport, and disposes
@@ -47,8 +62,8 @@ The application has two main modules:
 The chosen renderer builds DOM/SVG and relies on browser DOM parsing, so the
 rendering phase belongs on the main thread. A separate outline worker would
 unzip the presentation a second time, increasing CPU and peak memory. Lazy
-slide/media parsing and single-slide rendering avoid most initial work without
-that duplication.
+slide/media parsing and windowed document rendering avoid most initial work
+without that duplication.
 
 A LibreOffice-class WASM engine would add a much larger download, startup cost,
 and memory footprint. It is a potential fallback only when fidelity for
@@ -56,7 +71,7 @@ unsupported PowerPoint effects matters more than startup performance.
 
 ## Performance
 
-- The application entry is about 17 kB minified and 6 kB gzip.
+- The application entry is about 17.5 kB minified and 6.3 kB gzip.
 - The renderer is isolated in a lazy chunk and prefetched during idle time.
 - `lazySlides` and `lazyMedia` defer unvisited content.
 - Windowed document mode mounts only slides near the right-hand scrollport.
@@ -147,7 +162,13 @@ No repository secret is required.
 ```text
 .
 |-- .github/workflows/deploy-pages.yml
+|-- .gitignore
+|-- LICENSE
+|-- README.md
 |-- index.html
+|-- integration/remote-source.mjs
+|-- package-lock.json
+|-- package.json
 |-- public/
 |   `-- fixtures/chapter-1-v9.0.pptx
 |-- src/
@@ -156,9 +177,7 @@ No repository secret is required.
 |   `-- styles.css
 |-- test/
 |   `-- source.test.js
-|-- integration/remote-source.mjs
-|-- vite.config.js
-`-- package.json
+`-- vite.config.js
 ```
 
 ## Known limitations
