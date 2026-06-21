@@ -111,7 +111,7 @@ npm run preview
 ## Tests
 
 The canonical fixture is the 89-slide, 19.1 MB Chapter 1 presentation from
-Kurose and Ross's *Computer Networking: A Top-Down Approach*, 9th edition:
+Kurose and Ross's _Computer Networking: A Top-Down Approach_, 9th edition:
 
 [Chapter_1_v9.0.pptx](https://gaia.cs.umass.edu/kurose_ross/ppt-9e/Chapter_1_v9.0.pptx)
 
@@ -135,13 +135,25 @@ tests and is not included in the GitHub Pages artifact.
 
 ## URL opening
 
-The URL dialog accepts HTTP and HTTPS direct file responses. Direct access is
-attempted first; eligible HTTPS URLs fall back to the configured CORS proxy. A
-presentation can also be opened at startup with a URL-encoded query parameter:
+The URL dialog accepts HTTP and HTTPS direct file responses. Direct access is attempted first; eligible HTTPS URLs fall back to the configured CORS proxy. A presentation can also be opened at startup with the `url` query parameter:
 
 ```text
-https://costineest.github.io/pptx-web/?url=https%3A%2F%2Ffiles.example%2Fdeck.pptx
+https://costineest.github.io/pptx-web/?url=https://gaia.cs.umass.edu/kurose_ross/ppt-9e/Chapter_1_v9.0.pptx
 ```
+
+To open your own presentation this way:
+
+1. Start with the viewer URL: `https://costineest.github.io/pptx-web/`.
+2. Add `?url=` followed by the direct HTTPS URL of the `.pptx` file.
+3. URL-encode the file URL when it contains query parameters or other reserved
+   characters. For example, `https://files.example/deck.pptx` becomes
+   `https%3A%2F%2Ffiles.example%2Fdeck.pptx`.
+4. Open or share the completed viewer URL. The presentation loads
+   automatically when the page opens.
+
+The example above opens the Chapter 1 presentation directly in the deployed
+viewer. You can also open the viewer normally and paste a direct file URL into
+the URL dialog.
 
 Sharing pages from Google Drive, SharePoint, and similar services are usually
 not direct file responses. They need a provider-specific direct link or a
