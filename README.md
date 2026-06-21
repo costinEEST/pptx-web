@@ -14,12 +14,14 @@ a fallback when browser CORS prevents access.
 ## Table of contents
 
 - [Features](#features)
+- [Using the viewer](#using-the-viewer)
+- [Keyboard shortcuts](#keyboard-shortcuts)
 - [Architecture](#architecture)
 - [Why no Web Worker or WASM?](#why-no-web-worker-or-wasm)
 - [Performance](#performance)
 - [Local development](#local-development)
 - [Tests](#tests)
-- [URL opening](#url-opening)
+- [Remote URLs and sharing](#remote-urls-and-sharing)
 - [GitHub Pages deployment](#github-pages-deployment)
 - [Project structure](#project-structure)
 - [Known limitations](#known-limitations)
@@ -27,18 +29,62 @@ a fallback when browser CORS prevents access.
 
 ## Features
 
-- Open a local `.pptx` with the file picker.
-- Drop a presentation anywhere in the application.
-- Open a direct file URL, with automatic proxy fallback when browser CORS
-  prevents access.
-- Scroll slides as a continuous, PDF-like vertical document.
-- Navigate with thumbnails, previous/next controls, a slide number, the
-  keyboard, or a touch swipe.
-- Search presentation text and highlight matching slide elements.
-- Zoom, fit the slide to the stage, and enter fullscreen mode.
-- Cancel active downloads and rendering work.
-- Reject invalid input, legacy `.ppt` files, oversized files, and unsafe ZIP
-  expansion through explicit limits.
+- Open local `.pptx` files with the file picker or drag and drop; local files
+  remain in the browser and are never uploaded.
+- Open direct HTTP or HTTPS file URLs with streamed download progress and
+  automatic fallback to a restricted CORS proxy when direct access fails.
+- Preserve successfully opened remote URLs in the address bar as reloadable,
+  shareable `?url=` links, including remote URLs with their own query strings;
+  opening a local file removes stale remote URL state.
+- Load a shared presentation automatically when the page opens with a `url`
+  query parameter.
+- Scroll slides as a continuous, PDF-like vertical document with windowed
+  rendering for large presentations.
+- Browse progressively rendered thumbnails, track the active slide, and
+  collapse the thumbnail sidebar when more viewing space is needed.
+- Navigate with thumbnails, previous/next buttons, a typed slide number,
+  keyboard shortcuts, or horizontal touch swipes.
+- Search presentation text case-insensitively, move forward or backward
+  through wrapping results, and highlight the matching slide element.
+- Zoom from 25% to 250% in 10% steps, reset to a fitted 100% view, and enter
+  fullscreen presentation mode.
+- Show determinate progress when the file size is known, report proxy fallback
+  and rendering status, and allow active work to be cancelled.
+- Abort stale work when another presentation is opened and dispose previous
+  viewer, thumbnail, and search-highlight resources.
+- Reject unsupported URL protocols, invalid or empty files, legacy `.ppt`
+  files, files larger than 200 MB, and unsafe ZIP expansion.
+- Adapt the interface for desktop, mobile, touch, reduced-motion, and
+  forced-colors environments, with native dialogs and labelled controls.
+
+## Using the viewer
+
+To open a local presentation, select **Open file** and choose a `.pptx`, or drag
+the file anywhere onto the page. The file is read locally and does not leave
+the device.
+
+To open a remote presentation, select **Open URL**, paste a direct HTTP or
+HTTPS `.pptx` response, and select **Open presentation**. After it renders, the
+address bar contains a shareable link that will reopen the same presentation.
+
+Once a presentation is open, scroll the document normally or use the
+thumbnails, slide counter, navigation buttons, search box, zoom controls, fit
+button, and fullscreen button. On a touch device, swipe left or right across
+the presentation to change slides.
+
+## Keyboard shortcuts
+
+| Shortcut | Action |
+| --- | --- |
+| `Ctrl+O` or `Command+O` | Open the local file picker |
+| `/` | Focus presentation search |
+| `Enter` in search | Open the next search result |
+| `Shift+Enter` in search | Open the previous search result |
+| `Right Arrow`, `Page Down`, or `Space` | Go to the next slide |
+| `Left Arrow` or `Page Up` | Go to the previous slide |
+| `Home` | Go to the first slide |
+| `End` | Go to the last slide |
+| `F` | Enter or exit fullscreen mode |
 
 ## Architecture
 
@@ -47,14 +93,17 @@ Its supported model includes text and style inheritance, shapes, images,
 tables, charts, SmartArt fallback data, groups, themes, backgrounds, and
 gradients.
 
-The application has two main modules:
+The application has three main JavaScript modules:
 
 1. [`src/source.js`](./src/source.js) normalizes local and remote presentations
    into the same bounded `ArrayBuffer` contract. It validates the ZIP signature,
    streams URL responses with progress, enforces a 200 MB compressed-file
    limit, supports cancellation, and retries eligible HTTPS URLs through the
-   configured CORS proxy after a direct network failure.
-2. [`src/main.js`](./src/main.js) owns the viewer lifecycle and UI. It loads the
+   configured CORS proxy after an eligible direct request fails.
+2. [`src/url-state.js`](./src/url-state.js) creates safe, readable viewer URLs
+   for remote presentations and removes stale remote state when a local file is
+   opened.
+3. [`src/main.js`](./src/main.js) owns the viewer lifecycle and UI. It loads the
    renderer dynamically, renders slides as a windowed vertical document,
    mounts thumbnails as they approach the sidebar viewport, and disposes
    renderer resources when another file is opened.
@@ -76,7 +125,7 @@ unsupported PowerPoint effects matters more than startup performance.
 
 ## Performance
 
-- The application entry is about 17.5 kB minified and 6.3 kB gzip.
+- The application entry is about 18.2 kB minified and 6.5 kB gzip.
 - The renderer is isolated in a lazy chunk and prefetched during idle time.
 - `lazySlides` and `lazyMedia` defer unvisited content.
 - Windowed document mode mounts only slides near the right-hand scrollport.
@@ -118,7 +167,8 @@ Kurose and Ross's _Computer Networking: A Top-Down Approach_, 9th edition:
 A pinned copy lives at
 [`test/fixtures/chapter-1-v9.0.pptx`](./test/fixtures/chapter-1-v9.0.pptx)
 so unit tests remain deterministic. The tests verify its exact size and SHA-256
-digest in addition to synthetic validation and streaming cases.
+digest in addition to synthetic validation, streaming, CORS fallback, and
+shareable URL cases.
 
 ```bash
 # Deterministic unit tests, including the pinned real presentation
@@ -133,9 +183,11 @@ header. The app first tries that URL directly, then retries through the
 restricted Cloudflare Worker. The pinned fixture is used only by automated
 tests and is not included in the GitHub Pages artifact.
 
-## URL opening
+## Remote URLs and sharing
 
-The URL dialog accepts HTTP and HTTPS direct file responses. Direct access is attempted first; eligible HTTPS URLs fall back to the configured CORS proxy. A presentation can also be opened at startup with the `url` query parameter:
+The URL dialog accepts HTTP and HTTPS direct file responses. Direct access is
+attempted first; eligible HTTPS URLs fall back to the configured CORS proxy. A
+presentation can also be opened at startup with the `url` query parameter:
 
 ```text
 https://costineest.github.io/pptx-web/?url=https://gaia.cs.umass.edu/kurose_ross/ppt-9e/Chapter_1_v9.0.pptx
@@ -145,9 +197,9 @@ To open your own presentation this way:
 
 1. Start with the viewer URL: `https://costineest.github.io/pptx-web/`.
 2. Add `?url=` followed by the direct HTTPS URL of the `.pptx` file.
-3. URL-encode the file URL when it contains query parameters or other reserved
-   characters. For example, `https://files.example/deck.pptx` becomes
-   `https%3A%2F%2Ffiles.example%2Fdeck.pptx`.
+3. URL-encode the nested file URL when it contains its own query parameters or
+   other reserved characters. The viewer does this automatically for links
+   opened through the URL dialog.
 4. Open or share the completed viewer URL. The presentation loads
    automatically when the page opens.
 
@@ -191,10 +243,12 @@ separately from this Pages workflow.
 |-- src/
 |   |-- main.js
 |   |-- source.js
-|   `-- styles.css
+|   |-- styles.css
+|   `-- url-state.js
 |-- test/
 |   |-- fixtures/chapter-1-v9.0.pptx
-|   `-- source.test.js
+|   |-- source.test.js
+|   `-- url-state.test.js
 `-- vite.config.js
 ```
 
