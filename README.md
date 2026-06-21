@@ -153,7 +153,8 @@ To open your own presentation this way:
 
 The example above opens the Chapter 1 presentation directly in the deployed
 viewer. You can also open the viewer normally and paste a direct file URL into
-the URL dialog.
+the URL dialog. After the presentation opens successfully, the address bar is
+updated with the same `?url=` link so it can be copied, shared, or reloaded.
 
 Sharing pages from Google Drive, SharePoint, and similar services are usually
 not direct file responses. They need a provider-specific direct link or a

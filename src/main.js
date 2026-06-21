@@ -1,6 +1,7 @@
 import './styles.css';
 
 import { fetchPresentation, formatBytes, readLocalPresentation } from './source.js';
+import { createViewerUrl } from './url-state.js';
 
 const DOCUMENT_LIST_OPTIONS = {
   windowed: true,
@@ -214,8 +215,15 @@ async function renderPresentation(source, controller) {
   updateCurrentSlide(viewer.currentSlideIndex);
   createThumbnails();
   updateCurrentSlide(viewer.currentSlideIndex);
+  syncViewerUrl(source);
   finishOperation(controller);
   setStatus(`${source.name} - ${viewer.slideCount} slide${viewer.slideCount === 1 ? '' : 's'}`);
+}
+
+function syncViewerUrl(source) {
+  const presentationUrl = source.source === 'url' ? source.url : null;
+  const nextUrl = createViewerUrl(location.href, presentationUrl);
+  history.replaceState(history.state, '', nextUrl.href);
 }
 
 function beginOperation(title, detail) {
