@@ -7,8 +7,9 @@ JavaScript, Vite, and
 The GitHub Pages deployment target is
 [costineest.github.io/pptx-web](https://costineest.github.io/pptx-web/).
 
-Files selected from the device stay in the browser. There is no application
-backend and no upload step.
+Files selected from the device stay in the browser and are never uploaded.
+Remote URLs are fetched directly first, with a restricted Cloudflare Worker as
+a fallback when browser CORS prevents access.
 
 ## Table of contents
 
@@ -28,7 +29,8 @@ backend and no upload step.
 
 - Open a local `.pptx` with the file picker.
 - Drop a presentation anywhere in the application.
-- Open an HTTP(S) direct file URL when its server permits browser CORS access.
+- Open a direct file URL, with automatic proxy fallback when browser CORS
+  prevents access.
 - Scroll slides as a continuous, PDF-like vertical document.
 - Navigate with thumbnails, previous/next controls, a slide number, the
   keyboard, or a touch swipe.
@@ -50,12 +52,15 @@ The application has two main modules:
 1. [`src/source.js`](./src/source.js) normalizes local and remote presentations
    into the same bounded `ArrayBuffer` contract. It validates the ZIP signature,
    streams URL responses with progress, enforces a 200 MB compressed-file
-   limit, supports cancellation, and resolves the canonical test deck to its
-   same-origin static mirror.
+   limit, supports cancellation, and retries eligible HTTPS URLs through the
+   configured CORS proxy after a direct network failure.
 2. [`src/main.js`](./src/main.js) owns the viewer lifecycle and UI. It loads the
    renderer dynamically, renders slides as a windowed vertical document,
    mounts thumbnails as they approach the sidebar viewport, and disposes
    renderer resources when another file is opened.
+
+The separately deployed Cloudflare Worker is only a fallback transport for
+eligible remote URLs. Local files and CORS-enabled remote hosts do not use it.
 
 ### Why no Web Worker or WASM?
 
@@ -111,7 +116,7 @@ Kurose and Ross's *Computer Networking: A Top-Down Approach*, 9th edition:
 [Chapter_1_v9.0.pptx](https://gaia.cs.umass.edu/kurose_ross/ppt-9e/Chapter_1_v9.0.pptx)
 
 A pinned copy lives at
-[`public/fixtures/chapter-1-v9.0.pptx`](./public/fixtures/chapter-1-v9.0.pptx)
+[`test/fixtures/chapter-1-v9.0.pptx`](./test/fixtures/chapter-1-v9.0.pptx)
 so unit tests remain deterministic. The tests verify its exact size and SHA-256
 digest in addition to synthetic validation and streaming cases.
 
@@ -119,20 +124,20 @@ digest in addition to synthetic validation and streaming cases.
 # Deterministic unit tests, including the pinned real presentation
 npm test
 
-# Network integration test against the original UMass URL
+# Network integration test for the deployed CORS proxy fallback
 npm run test:remote
 ```
 
 The UMass host currently does not return an `Access-Control-Allow-Origin`
-header. For this exact fixture URL, the app transparently uses the pinned
-same-origin copy instead. Vite serves that mirror during local development and
-copies it into the GitHub Pages artifact. Other remote URLs still require their
-servers to enable CORS.
+header. The app first tries that URL directly, then retries through the
+restricted Cloudflare Worker. The pinned fixture is used only by automated
+tests and is not included in the GitHub Pages artifact.
 
 ## URL opening
 
-The URL dialog accepts HTTP and HTTPS direct file responses. A presentation can
-also be opened at startup with a URL-encoded query parameter:
+The URL dialog accepts HTTP and HTTPS direct file responses. Direct access is
+attempted first; eligible HTTPS URLs fall back to the configured CORS proxy. A
+presentation can also be opened at startup with a URL-encoded query parameter:
 
 ```text
 https://costineest.github.io/pptx-web/?url=https%3A%2F%2Ffiles.example%2Fdeck.pptx
@@ -155,7 +160,8 @@ Settings > Pages > Build and deployment > Source > GitHub Actions
 ```
 
 The workflow needs only the standard Pages permissions declared in the file.
-No repository secret is required.
+No repository secret is required. The Cloudflare Worker is deployed and managed
+separately from this Pages workflow.
 
 ## Project structure
 
@@ -169,13 +175,12 @@ No repository secret is required.
 |-- integration/remote-source.mjs
 |-- package-lock.json
 |-- package.json
-|-- public/
-|   `-- fixtures/chapter-1-v9.0.pptx
 |-- src/
 |   |-- main.js
 |   |-- source.js
 |   `-- styles.css
 |-- test/
+|   |-- fixtures/chapter-1-v9.0.pptx
 |   `-- source.test.js
 `-- vite.config.js
 ```

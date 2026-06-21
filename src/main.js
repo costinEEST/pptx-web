@@ -8,7 +8,7 @@ const DOCUMENT_LIST_OPTIONS = {
   initialSlides: 4,
   overscanViewport: 1.5,
 };
-const MIRROR_BASE_URL = new URL(import.meta.env.BASE_URL, window.location.origin).href;
+const CORS_PROXY_URL = 'https://cors-proxy.costineest.workers.dev/';
 
 const elements = {
   app: byId('app'),
@@ -148,7 +148,11 @@ async function openRemoteUrl(url) {
   try {
     const source = await fetchPresentation(url, {
       signal: controller.signal,
-      mirrorBaseUrl: MIRROR_BASE_URL,
+      proxyUrl: CORS_PROXY_URL,
+      onProxyFallback: () => {
+        elements.loadingDetail.textContent = 'Direct access blocked; retrying through the CORS proxy...';
+        setIndeterminateProgress();
+      },
       onProgress: ({ loaded, total }) => {
         updateLoadingProgress({ loaded, total });
         elements.loadingDetail.textContent = total

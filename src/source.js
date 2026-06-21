@@ -7,13 +7,6 @@ const PPTX_SIGNATURES = [
   [0x50, 0x4b, 0x07, 0x08],
 ];
 
-const PRESENTATION_MIRRORS = new Map([
-  [
-    'https://gaia.cs.umass.edu/kurose_ross/ppt-9e/Chapter_1_v9.0.pptx',
-    'fixtures/chapter-1-v9.0.pptx',
-  ],
-]);
-
 export function isPptxName(name) {
   return /\.pptx(?:$|[?#])/i.test(name.trim());
 }
@@ -63,23 +56,11 @@ export async function readLocalPresentation(file, options = {}) {
 
 export async function fetchPresentation(urlValue, options = {}) {
   const maxBytes = options.maxBytes ?? DEFAULT_MAX_BYTES;
-  const fetchImpl = options.fetchImpl ?? fetch;
-  const url = resolvePresentationUrl(urlValue, options);
-
-  let response;
-  try {
-    response = await fetchImpl(url, {
-      signal: options.signal,
-      credentials: 'omit',
-      redirect: 'follow',
-    });
-  } catch (error) {
-    if (error?.name === 'AbortError') throw error;
-    throw new Error('The URL could not be fetched. The server may block browser access with CORS.', { cause: error });
-  }
+  const url = normalizeHttpUrl(urlValue, options.baseUrl);
+  const { response, usedProxy } = await fetchWithCorsFallback(url, options);
 
   if (!response.ok) {
-    throw new Error(`The URL returned HTTP ${response.status}.`);
+    throw new Error(`${usedProxy ? 'The CORS proxy' : 'The URL'} returned HTTP ${response.status}.`);
   }
 
   const lengthHeader = Number(response.headers.get('content-length'));
@@ -100,12 +81,6 @@ export async function fetchPresentation(urlValue, options = {}) {
   return { buffer, name, source: 'url', url: url.href };
 }
 
-export function resolvePresentationUrl(value, options = {}) {
-  const url = normalizeHttpUrl(value, options.baseUrl);
-  const mirrorPath = PRESENTATION_MIRRORS.get(url.href);
-  return mirrorPath && options.mirrorBaseUrl ? new URL(mirrorPath, options.mirrorBaseUrl) : url;
-}
-
 export function normalizeHttpUrl(value, baseUrl = globalThis.location?.href) {
   const input = String(value ?? '').trim();
   if (!input) throw new Error('Enter a URL to a .pptx file.');
@@ -120,6 +95,44 @@ export function normalizeHttpUrl(value, baseUrl = globalThis.location?.href) {
     throw new Error('Only HTTP and HTTPS URLs are supported.');
   }
   return url;
+}
+
+async function fetchWithCorsFallback(url, options) {
+  const fetchImpl = options.fetchImpl ?? fetch;
+  const requestOptions = {
+    signal: options.signal,
+    credentials: 'omit',
+    redirect: 'follow',
+  };
+  const canUseProxy = Boolean(options.proxyUrl) && url.protocol === 'https:';
+
+  let directResponse;
+  try {
+    directResponse = await fetchImpl(url, requestOptions);
+    if (directResponse.ok || !canUseProxy) {
+      return { response: directResponse, usedProxy: false };
+    }
+  } catch (error) {
+    if (error?.name === 'AbortError') throw error;
+    if (!canUseProxy) {
+      throw new Error('The URL could not be fetched. The server may block browser access with CORS.', {
+        cause: error,
+      });
+    }
+  }
+
+  await directResponse?.body?.cancel().catch(() => {});
+  options.onProxyFallback?.();
+
+  const proxyUrl = normalizeHttpUrl(options.proxyUrl);
+  proxyUrl.searchParams.set('url', url.href);
+  try {
+    const response = await fetchImpl(proxyUrl, requestOptions);
+    return { response, usedProxy: true };
+  } catch (error) {
+    if (error?.name === 'AbortError') throw error;
+    throw new Error('The URL could not be fetched directly or through the CORS proxy.', { cause: error });
+  }
 }
 
 export function formatBytes(bytes) {

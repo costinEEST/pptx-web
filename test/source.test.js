@@ -10,11 +10,10 @@ import {
   isPptxName,
   normalizeHttpUrl,
   readLocalPresentation,
-  resolvePresentationUrl,
 } from '../src/source.js';
 
 const zipBuffer = () => Uint8Array.from([0x50, 0x4b, 0x03, 0x04, 1, 2, 3]).buffer;
-const fixtureUrl = new URL('../public/fixtures/chapter-1-v9.0.pptx', import.meta.url);
+const fixtureUrl = new URL('./fixtures/chapter-1-v9.0.pptx', import.meta.url);
 const fixtureSha256 = '82b5c78c1845c85f714ca8f7973f7252edae00265f75af5a12075d1b87591419';
 
 test('recognizes PPTX names without accepting legacy PPT files', () => {
@@ -27,21 +26,6 @@ test('only accepts HTTP(S) URLs', () => {
   assert.equal(normalizeHttpUrl('/deck.pptx', 'https://example.com/app').href, 'https://example.com/deck.pptx');
   assert.throws(() => normalizeHttpUrl('file:///tmp/deck.pptx'), /Only HTTP and HTTPS/);
   assert.throws(() => normalizeHttpUrl(''), /Enter a URL/);
-});
-
-test('rewrites the allowlisted UMass fixture to its same-origin mirror', () => {
-  const result = resolvePresentationUrl(
-    'https://gaia.cs.umass.edu/kurose_ross/ppt-9e/Chapter_1_v9.0.pptx',
-    { mirrorBaseUrl: 'https://costineest.github.io/pptx-web/' },
-  );
-
-  assert.equal(result.href, 'https://costineest.github.io/pptx-web/fixtures/chapter-1-v9.0.pptx');
-  assert.equal(
-    resolvePresentationUrl('https://example.com/deck.pptx', {
-      mirrorBaseUrl: 'https://costineest.github.io/pptx-web/',
-    }).href,
-    'https://example.com/deck.pptx',
-  );
 });
 
 test('checks the ZIP signature and size before parsing', () => {
@@ -93,6 +77,30 @@ test('fetches a streamed presentation and reports progress', async () => {
   assert.equal(result.name, 'Roadmap 2026.pptx');
   assert.equal(result.buffer.byteLength, 7);
   assert.deepEqual(progress.at(-1), { loaded: 7, total: 7 });
+});
+
+test('falls back to the CORS proxy after a direct network failure', async () => {
+  const requests = [];
+  let fallbackCount = 0;
+  const result = await fetchPresentation('https://example.com/deck.pptx', {
+    proxyUrl: 'https://cors-proxy.costineest.workers.dev/',
+    fetchImpl: async (url) => {
+      requests.push(url.href);
+      if (requests.length === 1) throw new TypeError('Failed to fetch');
+      return new Response(zipBuffer(), { headers: { 'content-length': '7' } });
+    },
+    onProxyFallback: () => {
+      fallbackCount += 1;
+    },
+  });
+
+  assert.deepEqual(requests, [
+    'https://example.com/deck.pptx',
+    'https://cors-proxy.costineest.workers.dev/?url=https%3A%2F%2Fexample.com%2Fdeck.pptx',
+  ]);
+  assert.equal(fallbackCount, 1);
+  assert.equal(result.url, 'https://example.com/deck.pptx');
+  assert.equal(result.name, 'deck.pptx');
 });
 
 test('explains likely CORS failures', async () => {

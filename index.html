@@ -162,8 +162,8 @@
         <label for="url-input">Presentation URL</label>
         <input id="url-input" type="url" inputmode="url" placeholder="https://example.com/presentation.pptx" required />
         <p>
-          That server must allow cross-origin browser requests (CORS). Shared page links are usually not direct file
-          links.
+          The app tries the URL directly, then retries through its restricted CORS proxy. Shared page links are
+          usually not direct file links.
         </p>
         <div class="dialog-actions">
           <button id="url-cancel" class="button button-secondary" type="button">Cancel</button>
